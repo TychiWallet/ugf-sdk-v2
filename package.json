@@ -1,0 +1,42 @@
+{
+  "name": "@tychi/ugf-sdk",
+  "version": "2.0.0",
+  "description": "Universal Gas Framework SDK — sponsor gas fees across chains",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "ethers": "^6.0.0"
+  },
+  "optionalDependencies": {
+    "@solana/web3.js": "^1.95.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "ethers": "^6.13.0",
+    "@solana/web3.js": "^1.95.0",
+    "@types/node": "^20.0.0"
+  },
+  "keywords": [
+    "ugf",
+    "gas",
+    "abstraction",
+    "multichain",
+    "web3"
+  ],
+  "license": "MIT"
+}
