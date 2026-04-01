@@ -8,7 +8,7 @@ This folder contains minimal examples to run common UGF flows.
 
 ```bash
 npm install
-````
+```
 
 Create a `.env` file:
 
@@ -34,6 +34,12 @@ Solana SPL transfer:
 npx tsx examples/sol-spl.ts
 ```
 
+Solana Native SOL transfer:
+
+```bash
+npx tsx examples/sol-transfer.ts
+```
+
 Solana custom transaction:
 
 ```bash
@@ -56,19 +62,23 @@ npx tsx examples/sui-transfer.ts
 
 ## Files
 
-* `sol-spl.ts`
+- `sol-spl.ts`
   SPL token transfer on Solana
   Payment: $U (United Stables) (x402 on BNB)
 
-* `sol-custom.ts`
+- `sol-custom.ts`
   Custom Solana transaction (user-built)
   Payment: USDC (Circle) (x402 on Base)
 
-* `evm-vault.ts`
+- `sol-transfer.ts`  
+  Native SOL transfer  
+  Payment: USDC (Circle) (x402 on Base)
+
+- `evm-vault.ts`
   EVM transaction execution
   Payment: ETH (vault on Base)
 
-* `sui-transfer.ts`
+- `sui-transfer.ts`
   Sui transaction execution
   Payment: USDC (Circle) (x402 on Base)
 
@@ -76,8 +86,8 @@ npx tsx examples/sui-transfer.ts
 
 ## Requirements
 
-* Wallet must have funds on required chains
-* Correct RPC URLs
+- Wallet must have funds on required chains
+- Correct RPC URLs
 
 ---
 

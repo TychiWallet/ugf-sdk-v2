@@ -25,10 +25,11 @@ npm link @tychilabs/ugf-sdk
 
 Refer to the `examples/` folder:
 
-- Solana SPL transfer (x402)
-- Solana custom transaction (x402)
 - EVM execution (vault)
 - Sui execution (x402)
+- Solana SPL transfer (x402)
+- Solana SOL transfer (x402)
+- Solana custom transaction (x402)
 
 ---
 
