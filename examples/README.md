@@ -6,11 +6,9 @@ This folder contains minimal examples to run common UGF flows.
 
 ## Setup
 
-Install dependencies:
-
 ```bash
 npm install
-```
+````
 
 Create a `.env` file:
 
@@ -36,6 +34,12 @@ Solana SPL transfer:
 npx tsx examples/sol-spl.ts
 ```
 
+Solana custom transaction:
+
+```bash
+npx tsx examples/sol-custom.ts
+```
+
 EVM execution (vault payment):
 
 ```bash
@@ -45,34 +49,38 @@ npx tsx examples/evm-vault.ts
 Sui execution:
 
 ```bash
-npx tsx examples/sui.ts
+npx tsx examples/sui-transfer.ts
 ```
 
 ---
 
 ## Files
 
-- `sol-spl.ts`
+* `sol-spl.ts`
   SPL token transfer on Solana
-  Payment: $U (United Stables) (via x402 on BNB)
+  Payment: $U (United Stables) (x402 on BNB)
 
-- `evm-vault.ts`
-  EVM transaction with vault payment
-  Payment: ETH (via vault on Base)
+* `sol-custom.ts`
+  Custom Solana transaction (user-built)
+  Payment: USDC (Circle) (x402 on Base)
 
-- `sui.ts`
+* `evm-vault.ts`
+  EVM transaction execution
+  Payment: ETH (vault on Base)
+
+* `sui-transfer.ts`
   Sui transaction execution
-  Payment: USDC (Circle) (via x402 on Base)
+  Payment: USDC (Circle) (x402 on Base)
 
 ---
 
 ## Requirements
 
-- Wallet must have funds on required chains
-- Correct RPC URLs
+* Wallet must have funds on required chains
+* Correct RPC URLs
 
 ---
 
 ## Notes
 
-These are minimal examples for quick testing and integration.
+Minimal examples for testing and integration.

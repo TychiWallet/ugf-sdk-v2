@@ -3,7 +3,7 @@ import fs from "fs";
 import bs58 from "bs58";
 import { ethers } from "ethers";
 import { Keypair } from "@solana/web3.js";
-import { UGFClient } from "@tychi/ugf-sdk";
+import { UGFClient } from "@tychilabs/ugf-sdk";
 
 const SERVICE_URL = "https://gateway.universalgasframework.com";
 

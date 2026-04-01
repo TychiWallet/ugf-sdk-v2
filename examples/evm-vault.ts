@@ -1,7 +1,7 @@
 import "dotenv/config";
 import fs from "fs";
 import { ethers } from "ethers";
-import { UGFClient } from "@tychi/ugf-sdk";
+import { UGFClient } from "@tychilabs/ugf-sdk";
 
 const SERVICE_URL = "https://gateway.universalgasframework.com";
 

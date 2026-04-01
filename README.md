@@ -2,7 +2,7 @@
 
 This SDK provides a simple interface to execute transactions across chains using UGF.
 
-This is a beta release intended for review and early testing.  
+This is a beta release intended for review and early testing.
 The SDK is functional and can be used with the provided examples.
 
 ---
@@ -23,26 +23,29 @@ npm link @tychilabs/ugf-sdk
 
 ## Usage
 
-Refer to the `examples/` folder for working integrations:
+Refer to the `examples/` folder:
 
-- Solana SPL transfer (x402 payment)
-- EVM execution (vault payment)
-- Sui execution (x402 payment)
+* Solana SPL transfer (x402)
+* Solana custom transaction (x402)
+* EVM execution (vault)
+* Sui execution (x402)
 
 ---
 
 ## Requirements
 
-- Node.js 18+
-- Valid RPC endpoints
-- Wallet with funds on required chains
+* Node.js 18+
+* Valid RPC endpoints
+* Wallet with funds
 
 ---
 
 ## Notes
 
-- This is a beta version — APIs may change
-- Use for testing, integration, and feedback
+* Beta version — APIs may change
+* Intended for testing and integration
+
+---
 
 ## Contact
 

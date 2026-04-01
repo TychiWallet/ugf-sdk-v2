@@ -3,7 +3,7 @@ import fs from "fs";
 import { Transaction } from "@mysten/sui/transactions";
 import { SuiJsonRpcClient, getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
 import { ethers } from "ethers";
-import { UGFClient } from "@tychi/ugf-sdk";
+import { UGFClient } from "@tychilabs/ugf-sdk";
 
 const BACKEND_URL = "https://gateway.universalgasframework.com";
 const SUI_RPC = getJsonRpcFullnodeUrl("mainnet");
