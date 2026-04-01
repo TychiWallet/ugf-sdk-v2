@@ -1,6 +1,6 @@
 {
   "name": "@tychilabs/ugf-sdk",
-  "version": "2.0.0-beta.2",
+  "version": "2.0.0-beta.3",
   "description": "Universal Gas Framework SDK — sponsor gas fees across chains",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
