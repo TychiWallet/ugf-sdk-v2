@@ -16,7 +16,7 @@ npm link
 In your project:
 
 ```bash
-npm link @tychi/ugf-sdk
+npm link @tychilabs/ugf-sdk
 ```
 
 ---
