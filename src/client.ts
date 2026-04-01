@@ -1,7 +1,7 @@
 import { Auth } from "./auth.js";
 import { EvmChain } from "./chains/evm.js";
 import { SolChain } from "./chains/sol.js";
-// import { SuiChain } from "./chains/sui.js";
+import { SuiChain } from "./chains/sui.js";
 // import { TronChain } from "./chains/tron.js";
 import { HttpClient } from "./http.js";
 import { X402Payment } from "./payment/x402.js";
@@ -29,7 +29,7 @@ export class UGFClient {
   readonly chains: {
     evm: EvmChain;
     sol: SolChain;
-    // sui: SuiChain;
+    sui: SuiChain;
     // tron: TronChain;
   };
 
@@ -52,8 +52,8 @@ export class UGFClient {
     this.chains = {
       evm: new EvmChain(this.http),
       sol: new SolChain(this.http),
-    //   sui: new SuiChain(this.http),
-    //   tron: new TronChain(this.http),
+      sui: new SuiChain(this.http),
+      //   tron: new TronChain(this.http),
     };
   }
 }

@@ -10,7 +10,7 @@ Install dependencies:
 
 ```bash
 npm install
-````
+```
 
 Create a `.env` file:
 
@@ -22,6 +22,8 @@ RPC_BNB=...
 
 USER_PRIVATE_KEY=...
 SOL_CLIENT_PRIVATE_KEY=...
+SUI_CLIENT_ADDRESS=...
+SUI_CLIENT_PRIVATE_KEY=...
 ```
 
 ---
@@ -40,24 +42,34 @@ EVM execution (vault payment):
 npx tsx examples/evm-vault.ts
 ```
 
+Sui execution:
+
+```bash
+npx tsx examples/sui.ts
+```
+
 ---
 
 ## Files
 
-* `sol-spl.ts`
+- `sol-spl.ts`
   SPL token transfer on Solana
-  Payment: $U (via x402 on BNB)
+  Payment: $U (United Stables) (via x402 on BNB)
 
-* `evm-vault.ts`
+- `evm-vault.ts`
   EVM transaction with vault payment
   Payment: ETH (via vault on Base)
+
+- `sui.ts`
+  Sui transaction execution
+  Payment: USDC (Circle) (via x402 on Base)
 
 ---
 
 ## Requirements
 
-* Wallet must have funds on required chains
-* Correct RPC URLs
+- Wallet must have funds on required chains
+- Correct RPC URLs
 
 ---
 

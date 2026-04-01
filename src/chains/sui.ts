@@ -1,0 +1,56 @@
+import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import type { HttpClient } from "../http.js";
+
+export class SuiChain {
+  constructor(private http: HttpClient) {}
+
+  async execute(params: {
+    digest: string;
+    keypair: Ed25519Keypair;
+    rpcUrl: string;
+    onTick?: (status: any, i: number) => void;
+  }) {
+    const { digest, keypair, rpcUrl, onTick } = params;
+
+    let txBytes: string | null = null;
+    let sponsorSig: string | null = null;
+
+    for (let i = 0; i < 30; i++) {
+      await new Promise((r) => setTimeout(r, 3000));
+
+      const status = (await this.http.get(`/status?digest=${digest}`)) as any;
+
+      onTick?.(status, i);
+
+      if (status.tx_bytes && status.sponsor_sig) {
+        txBytes = status.tx_bytes;
+        sponsorSig = status.sponsor_sig;
+        break;
+      }
+    }
+
+    if (!txBytes || !sponsorSig) {
+      throw new Error("Sponsor timeout");
+    }
+
+    const client = new SuiJsonRpcClient({
+      url: rpcUrl,
+      network: "mainnet",
+    });
+
+    const bytes = Buffer.from(txBytes, "base64");
+    const userSig = await keypair.signTransaction(bytes);
+
+    const result = await client.executeTransactionBlock({
+      transactionBlock: bytes,
+      signature: [userSig.signature, sponsorSig],
+      options: {
+        showEffects: true,
+        showEvents: true,
+      },
+    });
+
+    return result;
+  }
+}

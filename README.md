@@ -27,6 +27,7 @@ Refer to the `examples/` folder for working integrations:
 
 - Solana SPL transfer (x402 payment)
 - EVM execution (vault payment)
+- Sui execution (x402 payment)
 
 ---
 

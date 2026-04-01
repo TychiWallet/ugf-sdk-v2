@@ -1,35 +1,45 @@
 {
-  "name": "@tychi/ugf-sdk",
-  "version": "2.0.0",
+  "name": "@tychilabs/ugf-sdk",
+  "version": "2.0.0-beta.1",
   "description": "Universal Gas Framework SDK — sponsor gas fees across chains",
-  "type": "module",
   "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
     "clean": "rm -rf dist"
   },
   "peerDependencies": {
+    "@mysten/sui": "^2.13.0",
+    "@solana/web3.js": "^1.95.0",
     "ethers": "^6.0.0"
   },
-  "optionalDependencies": {
-    "@solana/web3.js": "^1.95.0"
+  "peerDependenciesMeta": {
+    "@mysten/sui": {
+      "optional": true
+    },
+    "@solana/web3.js": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
-    "ethers": "^6.13.0",
+    "@mysten/sui": "^2.13.2",
     "@solana/web3.js": "^1.95.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20.0.0",
+    "ethers": "^6.13.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.4.0"
   },
   "keywords": [
     "ugf",
