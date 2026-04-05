@@ -1,13 +1,18 @@
-import {
+import type {
   Transaction,
-  VersionedMessage,
-  VersionedTransaction,
   Connection,
-  type Keypair,
+  Keypair,
 } from "@solana/web3.js";
 import type { HttpClient } from "../http.js";
 import { Status, type PollOptions } from "../status.js";
 import { UGFError, UGFSignatureError, type StatusResponse } from "../types.js";
+
+let _sol: typeof import("@solana/web3.js") | null = null;
+
+async function loadSolana() {
+  if (!_sol) _sol = await import("@solana/web3.js");
+  return _sol;
+}
 
 export class SolChain {
   private readonly status: Status;
@@ -23,7 +28,13 @@ export class SolChain {
   /**
    * sol_transfer — sponsor=index0, user=index1 (hardcoded by UGF)
    */
-  private signSolTransfer(serializedMessage: string, keypair: Keypair): string {
+  private async signSolTransfer(
+    serializedMessage: string,
+    keypair: Keypair,
+  ): Promise<string> {
+    const { VersionedMessage, VersionedTransaction, Transaction } =
+      await loadSolana();
+
     const msgBuffer = Buffer.from(serializedMessage, "base64");
     try {
       const versionedMsg = VersionedMessage.deserialize(msgBuffer);
@@ -51,7 +62,12 @@ export class SolChain {
    * spl_transfer — sponsor already signed as fee payer.
    * User found by pubkey match.
    */
-  private signSplTransfer(serializedMessage: string, keypair: Keypair): string {
+  private async signSplTransfer(
+    serializedMessage: string,
+    keypair: Keypair,
+  ): Promise<string> {
+    const { VersionedMessage, VersionedTransaction, Transaction } =
+      await loadSolana();
     const msgBuffer = Buffer.from(serializedMessage, "base64");
     const userPubkey = keypair.publicKey.toBase58();
     try {
@@ -85,7 +101,7 @@ export class SolChain {
   private async executeFlow(
     digest: string,
     keypair: Keypair,
-    signFn: (msg: string, kp: Keypair) => string,
+    signFn: (msg: string, kp: Keypair) => Promise<string>,
     opts?: PollOptions,
   ): Promise<StatusResponse> {
     const sigStatus = await this.status.waitForUserSig(digest, opts);
@@ -95,7 +111,7 @@ export class SolChain {
         "MISSING_SERIALIZED_MESSAGE",
       );
     }
-    const userSig = signFn(sigStatus.serialized_message, keypair);
+    const userSig = await signFn(sigStatus.serialized_message, keypair);
     await this.submitSig(digest, userSig);
     return this.status.poll(digest, opts);
   }

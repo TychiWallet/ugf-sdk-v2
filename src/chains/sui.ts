@@ -1,6 +1,16 @@
-import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import type { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
+import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import type { HttpClient } from "../http.js";
+
+let _sui: { SuiJsonRpcClient: typeof SuiJsonRpcClient } | null = null;
+
+async function loadSui() {
+  if (!_sui) {
+    const rpc = await import("@mysten/sui/jsonRpc");
+    _sui = { SuiJsonRpcClient: rpc.SuiJsonRpcClient };
+  }
+  return _sui!;
+}
 
 export class SuiChain {
   constructor(private http: HttpClient) {}
@@ -12,6 +22,7 @@ export class SuiChain {
     onTick?: (status: any, i: number) => void;
   }) {
     const { digest, keypair, rpcUrl, onTick } = params;
+    const { SuiJsonRpcClient } = await loadSui();
 
     let txBytes: string | null = null;
     let sponsorSig: string | null = null;
