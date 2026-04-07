@@ -12,7 +12,10 @@ export class EvmChain {
     this.status = new Status(http);
   }
 
-  async waitForCompletion(digest: string, opts?: PollOptions): Promise<StatusResponse> {
+  async waitForCompletion(
+    digest: string,
+    opts?: PollOptions,
+  ): Promise<StatusResponse> {
     return this.status.poll(digest, opts);
   }
 
@@ -21,28 +24,18 @@ export class EvmChain {
     signer: ethers.Signer,
     buildTx: (signer: ethers.Signer) => Promise<ethers.TransactionResponse>,
     opts?: PollOptions,
-  ): Promise<{ ugfSponsorTx: string; userTxHash: string }> {
+  ): Promise<{ userTxHash: string }> {
     const completed = await this.status.poll(digest, opts);
 
-    if (!completed.signature) {
-      throw new UGFError("completed but no sponsor_tx returned", "MISSING_SIGNATURE");
-    }
-
     const userTx = await buildTx(signer);
-    const receipt = await userTx.wait();
-
-    if (!receipt || receipt.status !== 1) {
-      throw new UGFError(`user tx failed: ${userTx.hash}`, "USER_TX_FAILED");
-    }
 
     await this.http.post("/evm/confirm", {
       digest,
-      tx_hash: receipt.hash,
+      tx_hash: userTx.hash,
     });
 
     return {
-      ugfSponsorTx: completed.signature,
-      userTxHash: receipt.hash,
+      userTxHash: userTx.hash,
     };
   }
 }

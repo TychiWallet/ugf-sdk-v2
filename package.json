@@ -1,6 +1,6 @@
 {
   "name": "@tychilabs/ugf-sdk",
-  "version": "2.0.1",
+  "version": "2.0.23",
   "description": "Gasless transactions for AI agents and Web3 apps — pay gas in stablecoins or native EVM coins across any chain via Universal Gas Framework",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

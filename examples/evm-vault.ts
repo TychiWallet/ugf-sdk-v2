@@ -98,30 +98,21 @@ async function main() {
   console.log("Verified:", verify.status);
   save("3_verification.json", verify);
 
-  for (let i = 0; i < 30; i++) {
-    const status = await client.status.get(digest);
-
-    save("4_status.json", status);
-
-    if (status.status === "completed") {
-      console.log("Status: completed");
-      break;
-    }
-
-    console.log(`Status: ${status.status} (${i + 1}/30)`);
-    await new Promise((r) => setTimeout(r, 2000));
-  }
-
   const bnbWallet = wallet.connect(bnbProvider);
 
-  const finalTx = await bnbWallet.sendTransaction({
-    to: "0x51a2ab2FFf69a146A6E4231414aCC7727897B1ad",
-    value: halfBalance,
-  });
+  const { userTxHash } = await client.chains.evm.sponsorAndExecute(
+    digest,
+    bnbWallet,
+    async (signer) => {
+      return signer.sendTransaction({
+        to: "0x51a2ab2FFf69a146A6E4231414aCC7727897B1ad",
+        value: halfBalance,
+      });
+    },
+  );
 
-  console.log("Final tx:", finalTx.hash);
-  save("5_final_tx.json", { tx_hash: finalTx.hash });
-
+  console.log("Final tx:", userTxHash);
+  save("5_final_tx.json", { tx_hash: userTxHash });
   console.log("Done");
 }
 
