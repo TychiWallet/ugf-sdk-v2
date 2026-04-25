@@ -97,6 +97,66 @@ export interface StatusResponse {
   error?: string;
 }
 
+// ─── Tron ────────────────────────────────────────────────────────────────────
+
+export interface TronResources {
+  bandwidthAvailable: number;
+  energyAvailable: number;
+}
+
+export interface TronNetworkCosts {
+  bandwidthCost: number;
+  activationCost: number;
+  minBandwidthRequired: number;
+}
+
+export interface TrxTransferTxObject {
+  tron_address: string;
+  transfer_type: "trx_transfer";
+  to: string;
+  amount: string;
+}
+
+export interface Trc20TransferTxObject {
+  tron_address: string;
+  transfer_type: "trc20_transfer";
+  to: string;
+  amount: string;
+  contract: string;
+}
+
+export type TrxSponsorshipReason = "none" | "activation" | "bandwidth";
+
+export interface TrxSponsorshipAssessment {
+  requiresSponsorship: boolean;
+  reason: TrxSponsorshipReason;
+  needsActivation: boolean;
+  hasEnoughBandwidth: boolean;
+  resources: TronResources;
+  networkCosts: TronNetworkCosts;
+}
+
+export type Trc20SponsorshipReason =
+  | "none"
+  | "bandwidth"
+  | "energy"
+  | "bandwidth_and_energy";
+
+export interface Trc20SponsorshipAssessment {
+  requiresSponsorship: boolean;
+  reason: Trc20SponsorshipReason;
+  hasEnoughBandwidth: boolean;
+  hasEnoughEnergy: boolean;
+  requiredBandwidth: number;
+  requiredEnergy: number;
+  resources: TronResources;
+}
+
+export interface TronSponsoredExecutionResult {
+  txId: string;
+  status: StatusResponse;
+}
+
 // ─── Errors ──────────────────────────────────────────────────────────────────
 
 export class UGFError extends Error {

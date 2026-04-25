@@ -4,6 +4,10 @@ import type { HttpClient } from "../http.js";
 
 let _sui: { SuiJsonRpcClient: typeof SuiJsonRpcClient } | null = null;
 
+/**
+ * @notice Lazily loads Sui RPC client module.
+ * @returns Loaded Sui RPC client exports.
+ */
 async function loadSui() {
   if (!_sui) {
     const rpc = await import("@mysten/sui/jsonRpc");
@@ -13,8 +17,17 @@ async function loadSui() {
 }
 
 export class SuiChain {
+  /**
+   * @notice Creates Sui chain helper.
+   * @param http Shared SDK HTTP client.
+   */
   constructor(private http: HttpClient) {}
 
+  /**
+   * @notice Executes sponsored Sui transaction block.
+   * @param params Sui execution input.
+   * @returns Sui execution result.
+   */
   async execute(params: {
     digest: string;
     keypair: Ed25519Keypair;

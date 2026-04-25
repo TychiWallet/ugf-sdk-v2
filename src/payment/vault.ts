@@ -9,11 +9,24 @@ import {
 } from "../types.js";
 
 export class VaultPayment {
+  /**
+   * @notice Creates vault payment helper.
+   * @param http Shared SDK HTTP client.
+   * @param registry Registry helper for vault discovery.
+   */
   constructor(
     private readonly http: HttpClient,
     private readonly registry: Registry,
   ) {}
 
+  /**
+   * @notice Pays quote through vault contract.
+   * @param quote Quote returned by UGF.
+   * @param signer EVM signer sending native payment.
+   * @param chainId Payment chain id.
+   * @param token Payment token symbol.
+   * @returns Vault payment payload ready for submission.
+   */
   async pay(
     quote: QuoteResponse,
     signer: ethers.Signer,
@@ -48,10 +61,23 @@ export class VaultPayment {
     };
   }
 
+  /**
+   * @notice Submits vault payment payload to UGF.
+   * @param payload Vault payment payload.
+   * @returns Gateway payment submission result.
+   */
   async submit(payload: VaultPayload): Promise<PaymentSubmitResponse> {
     return this.http.post<PaymentSubmitResponse>("/payment/submit", payload);
   }
 
+  /**
+   * @notice Pays through vault and submits result in one step.
+   * @param quote Quote returned by UGF.
+   * @param signer EVM signer sending native payment.
+   * @param chainId Payment chain id.
+   * @param token Payment token symbol.
+   * @returns Gateway payment submission result.
+   */
   async payAndSubmit(
     quote: QuoteResponse,
     signer: ethers.Signer,

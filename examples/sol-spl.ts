@@ -32,13 +32,18 @@ const client = new UGFClient({
   baseUrl: SERVICE_URL,
 });
 
+/**
+ * @notice Runs sponsored SPL transfer example.
+ */
 async function main() {
   console.log("User:", USER);
   console.log("Payer:", wallet.address);
 
+  // Log in with EVM payer wallet before requesting quote.
   await client.auth.login(wallet);
   console.log("Logged in");
 
+  // Ask UGF for route pricing to sponsor SPL token transfer.
   const quote = await client.quote.get({
     payment_coin: "$U",
     payment_chain: "56",
@@ -62,6 +67,7 @@ async function main() {
     JSON.stringify(quote, null, 2),
   );
 
+  // Pay quote on EVM payment chain using x402.
   await client.payment.x402.execute({
     quote,
     signer: wallet,
@@ -70,6 +76,7 @@ async function main() {
 
   console.log("Payment done");
 
+  // Wait for sponsored SPL transfer message, sign it, and finish route.
   const result = await client.chains.sol.sponsorSplTransfer(
     quote.digest,
     keypair,

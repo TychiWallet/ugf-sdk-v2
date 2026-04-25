@@ -31,13 +31,23 @@ const client = new UGFClient({
   baseUrl: SERVICE_URL,
 });
 
+/**
+ * @notice Saves example output to local file.
+ * @param name Output file name.
+ * @param data JSON data to write.
+ */
 function save(name: string, data: any) {
   fs.writeFileSync(`${OUTPUT_DIR}/${name}`, JSON.stringify(data, null, 2));
 }
 
+/**
+ * @notice Runs sponsored SOL transfer example.
+ */
 async function main() {
+  // Log in with EVM payer wallet before requesting quote.
   await client.auth.login(wallet);
 
+  // Ask UGF for route pricing to sponsor native SOL transfer.
   const quote = await client.quote.get({
     payment_coin: "USDC",
     payer_address: wallet.address,
@@ -55,12 +65,14 @@ async function main() {
 
   save("1_quote.json", quote);
 
+  // Pay quote on EVM payment chain using x402.
   await client.payment.x402.execute({
     quote,
     signer: wallet,
     token: "USDC",
   });
 
+  // Wait for sponsored Solana transfer message, sign it, and finish route.
   const result = await client.chains.sol.sponsorSolTransfer(
     quote.digest,
     keypair,

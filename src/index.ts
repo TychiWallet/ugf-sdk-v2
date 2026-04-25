@@ -28,6 +28,16 @@ export type {
   // status
   StatusResponse,
   TxStatus,
+  // tron
+  TronResources,
+  TronNetworkCosts,
+  TrxTransferTxObject,
+  Trc20TransferTxObject,
+  TrxSponsorshipReason,
+  TrxSponsorshipAssessment,
+  Trc20SponsorshipReason,
+  Trc20SponsorshipAssessment,
+  TronSponsoredExecutionResult,
 } from "./types.js";
 
 // poll options

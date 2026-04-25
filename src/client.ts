@@ -2,7 +2,7 @@ import { Auth } from "./auth.js";
 import { EvmChain } from "./chains/evm.js";
 import { SolChain } from "./chains/sol.js";
 import { SuiChain } from "./chains/sui.js";
-// import { TronChain } from "./chains/tron.js";
+import { TronChain } from "./chains/tron.js";
 import { HttpClient } from "./http.js";
 import { X402Payment } from "./payment/x402.js";
 import { VaultPayment } from "./payment/vault.js";
@@ -30,9 +30,13 @@ export class UGFClient {
     evm: EvmChain;
     sol: SolChain;
     sui: SuiChain;
-    // tron: TronChain;
+    tron: TronChain;
   };
 
+  /**
+   * @notice Creates UGF SDK client and all module helpers.
+   * @param config Optional SDK config.
+   */
   constructor(config: UGFClientConfig = {}) {
     const baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
     this.http = new HttpClient(baseUrl);
@@ -53,7 +57,7 @@ export class UGFClient {
       evm: new EvmChain(this.http),
       sol: new SolChain(this.http),
       sui: new SuiChain(this.http),
-      //   tron: new TronChain(this.http),
+      tron: new TronChain(this.http),
     };
   }
 }

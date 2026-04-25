@@ -9,6 +9,10 @@ import { UGFError, UGFSignatureError, type StatusResponse } from "../types.js";
 
 let _sol: typeof import("@solana/web3.js") | null = null;
 
+/**
+ * @notice Lazily loads Solana SDK.
+ * @returns Solana module instance.
+ */
 async function loadSolana() {
   if (!_sol) _sol = await import("@solana/web3.js");
   return _sol;
@@ -17,16 +21,28 @@ async function loadSolana() {
 export class SolChain {
   private readonly status: Status;
 
+  /**
+   * @notice Creates Solana chain helper.
+   * @param http Shared SDK HTTP client.
+   */
   constructor(private readonly http: HttpClient) {
     this.status = new Status(http);
   }
 
+  /**
+   * @notice Submits user Solana signature back to UGF.
+   * @param digest UGF route digest.
+   * @param userSig Base64 Solana user signature.
+   */
   private async submitSig(digest: string, userSig: string): Promise<void> {
     await this.http.post("/sol/submit/sig", { digest, user_sig: userSig });
   }
 
   /**
-   * sol_transfer — sponsor=index0, user=index1 (hardcoded by UGF)
+   * @notice Signs sponsored SOL transfer message.
+   * @param serializedMessage Base64 serialized Solana message.
+   * @param keypair User signing keypair.
+   * @returns Base64 user signature.
    */
   private async signSolTransfer(
     serializedMessage: string,
@@ -59,8 +75,10 @@ export class SolChain {
   }
 
   /**
-   * spl_transfer — sponsor already signed as fee payer.
-   * User found by pubkey match.
+   * @notice Signs sponsored SPL transfer message.
+   * @param serializedMessage Base64 serialized Solana message.
+   * @param keypair User signing keypair.
+   * @returns Base64 user signature.
    */
   private async signSplTransfer(
     serializedMessage: string,
@@ -98,6 +116,14 @@ export class SolChain {
     }
   }
 
+  /**
+   * @notice Shared Solana user-signature flow.
+   * @param digest UGF route digest.
+   * @param keypair User signing keypair.
+   * @param signFn Message signing helper.
+   * @param opts Optional polling settings.
+   * @returns Final route status.
+   */
   private async executeFlow(
     digest: string,
     keypair: Keypair,
@@ -117,8 +143,11 @@ export class SolChain {
   }
 
   /**
-   * Case 1 — Sponsor pays fees. User signs SOL lamport transfer.
-   * UGF builds tx: sponsor=index0, user=index1.
+   * @notice Completes sponsored native SOL transfer flow.
+   * @param digest UGF route digest.
+   * @param keypair User signing keypair.
+   * @param opts Optional polling settings.
+   * @returns Final route status.
    */
   async sponsorSolTransfer(
     digest: string,
@@ -134,8 +163,11 @@ export class SolChain {
   }
 
   /**
-   * Case 2 — Sponsor pays fees. User signs SPL token transfer.
-   * UGF builds legacy tx, user found by pubkey.
+   * @notice Completes sponsored SPL token transfer flow.
+   * @param digest UGF route digest.
+   * @param keypair User signing keypair.
+   * @param opts Optional polling settings.
+   * @returns Final route status.
    */
   async sponsorSplTransfer(
     digest: string,
@@ -151,9 +183,13 @@ export class SolChain {
   }
 
   /**
-   * Case 3 — Custom tx. UGF sends SOL to user wallet directly.
-   * Poll until completed, then user builds + broadcasts their own tx.
-   * Returns the UGF sol transfer signature.
+   * @notice Completes sponsored custom Solana tx flow.
+   * @param digest UGF route digest.
+   * @param keypair User signing keypair.
+   * @param connection Solana RPC connection.
+   * @param buildTx Caller-owned transaction builder.
+   * @param opts Optional polling settings.
+   * @returns UGF funding signature and user tx signature.
    */
   async sponsorCustomTx(
     digest: string,

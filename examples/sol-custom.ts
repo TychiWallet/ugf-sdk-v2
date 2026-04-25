@@ -34,10 +34,20 @@ const client = new UGFClient({
   baseUrl: BACKEND_URL,
 });
 
+/**
+ * @notice Saves example output to local file.
+ * @param name Output file name.
+ * @param data JSON data to write.
+ */
 function save(name: string, data: unknown) {
   fs.writeFileSync(`${OUTPUT_DIR}/${name}`, JSON.stringify(data, null, 2));
 }
 
+/**
+ * @notice Builds quoted custom Solana tx payload.
+ * @param connection Solana RPC connection.
+ * @returns Base64 serialized transaction.
+ */
 async function buildQuotedTxBase64(connection: Connection): Promise<string> {
   const userPubkey = keypair.publicKey;
   const { blockhash } = await connection.getLatestBlockhash();
@@ -63,6 +73,12 @@ async function buildQuotedTxBase64(connection: Connection): Promise<string> {
   return serialized.toString("base64");
 }
 
+/**
+ * @notice Builds fresh user transaction for final Solana send.
+ * @param kp User keypair.
+ * @param blockhash Latest Solana blockhash.
+ * @returns Unsigned Solana transaction.
+ */
 function buildFreshUserTx(kp: Keypair, blockhash: string): Transaction {
   const tx = new Transaction();
   tx.feePayer = kp.publicKey;
@@ -77,13 +93,19 @@ function buildFreshUserTx(kp: Keypair, blockhash: string): Transaction {
   return tx;
 }
 
+/**
+ * @notice Runs Solana custom tx example.
+ */
 async function main() {
   const connection = new Connection(SOL_RPC, "confirmed");
 
+  // Build custom Solana transaction bytes that UGF will quote.
   const txBase64 = await buildQuotedTxBase64(connection);
 
+  // Log in with EVM payer wallet before requesting quote.
   await client.auth.login(wallet);
 
+  // Ask UGF for route pricing to sponsor this Solana custom transaction.
   const quote = await client.quote.get({
     payment_coin: "USDC",
     payer_address: wallet.address,
@@ -100,12 +122,14 @@ async function main() {
 
   save("1_quote.json", quote);
 
+  // Pay quote on EVM payment chain using x402.
   await client.payment.x402.execute({
     quote,
     signer: wallet,
     token: "USDC",
   });
 
+  // Wait for sponsorship, then build and send fresh user transaction on Solana.
   const result = await client.chains.sol.sponsorCustomTx(
     quote.digest,
     keypair,

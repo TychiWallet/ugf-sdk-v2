@@ -3,16 +3,31 @@ import { UGFAuthError, UGFError } from "./types.js";
 export class HttpClient {
   private token: string | null = null;
 
+  /**
+   * @notice Creates low-level HTTP client for UGF gateway.
+   * @param baseUrl UGF gateway base URL.
+   */
   constructor(private readonly baseUrl: string) {}
 
+  /**
+   * @notice Stores bearer token for future requests.
+   * @param token JWT token value.
+   */
   setToken(token: string): void {
     this.token = token;
   }
 
+  /**
+   * @notice Returns currently stored bearer token.
+   * @returns JWT token or `null`.
+   */
   getToken(): string | null {
     return this.token;
   }
 
+  /**
+   * @notice Clears stored bearer token.
+   */
   clearToken(): void {
     this.token = null;
   }
@@ -23,6 +38,11 @@ export class HttpClient {
     return h;
   }
 
+  /**
+   * @notice Sends GET request to UGF gateway.
+   * @param path Gateway path.
+   * @returns Parsed JSON response.
+   */
   async get<T>(path: string): Promise<T> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       headers: this.headers(),
@@ -30,6 +50,12 @@ export class HttpClient {
     return this.handleResponse<T>(res);
   }
 
+  /**
+   * @notice Sends POST request to UGF gateway.
+   * @param path Gateway path.
+   * @param body JSON request payload.
+   * @returns Parsed JSON response.
+   */
   async post<T>(path: string, body: unknown): Promise<T> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: "POST",

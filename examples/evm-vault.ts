@@ -24,22 +24,33 @@ if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
 
 const client = new UGFClient({ baseUrl: SERVICE_URL });
 
+/**
+ * @notice Saves example output to local file.
+ * @param name Output file name.
+ * @param data JSON data to write.
+ */
 function save(name: string, data: any) {
   fs.writeFileSync(`${OUTPUT_DIR}/${name}`, JSON.stringify(data, null, 2));
 }
 
+/**
+ * @notice Runs EVM vault payment example.
+ */
 async function main() {
   console.log("User:", userAddress);
 
+  // Log in with EVM payer wallet before requesting quote.
   await client.auth.login(wallet.connect(baseProvider));
   console.log("Logged in");
 
+  // Read destination-chain balance to decide transfer amount for this example.
   const balance = await bnbProvider.getBalance(userAddress);
   const halfBalance = balance / 5n;
 
   console.log("BNB balance:", balance.toString());
   console.log("Sending:", halfBalance.toString());
 
+  // Ask UGF for route pricing to sponsor destination EVM transfer.
   const quote = await client.quote.get({
     payment_coin: "ETH",
     payer_address: userAddress,
@@ -70,6 +81,7 @@ async function main() {
 
   const data = iface.encodeFunctionData("payForFuel", [digest]);
 
+  // Send native vault payment on payment chain.
   console.log("Sending vault payment...");
   console.log({
     digest,
@@ -89,6 +101,7 @@ async function main() {
   console.log("Waiting for confirmation...");
   await new Promise((r) => setTimeout(r, 15000));
 
+  // Submit vault payment proof back to UGF.
   const verify = await client.payment.vault.submit({
     digest,
     tx_hash: tx.hash,
@@ -100,6 +113,7 @@ async function main() {
 
   const bnbWallet = wallet.connect(bnbProvider);
 
+  // Wait for sponsorship, then send destination EVM transaction and confirm it to UGF.
   const { userTxHash } = await client.chains.evm.sponsorAndExecute(
     digest,
     bnbWallet,

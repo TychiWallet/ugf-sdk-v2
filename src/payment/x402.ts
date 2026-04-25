@@ -38,11 +38,24 @@ export interface X402Options {
 }
 
 export class X402Payment {
+  /**
+   * @notice Creates x402 payment helper.
+   * @param http Shared SDK HTTP client.
+   * @param registry Registry helper for token discovery.
+   */
   constructor(
     private readonly http: HttpClient,
     private readonly registry: Registry,
   ) {}
 
+  /**
+   * @notice Signs x402 payment payload for quote.
+   * @param quote Quote returned by UGF.
+   * @param signer EVM signer paying for route.
+   * @param provider Provider for token metadata lookup.
+   * @param opts Optional x402 signing settings.
+   * @returns Signed x402 payload ready for submission.
+   */
   async sign(
     quote: QuoteResponse,
     signer: ethers.Signer,
@@ -156,10 +169,23 @@ export class X402Payment {
     };
   }
 
+  /**
+   * @notice Submits signed x402 payload to UGF.
+   * @param payload Signed x402 payload.
+   * @returns Gateway payment submission result.
+   */
   async submit(payload: X402Payload): Promise<PaymentSubmitResponse> {
     return this.http.post<PaymentSubmitResponse>("/payment/submit", payload);
   }
 
+  /**
+   * @notice Signs and submits x402 payment in one step.
+   * @param quote Quote returned by UGF.
+   * @param signer EVM signer paying for route.
+   * @param provider Provider for token metadata lookup.
+   * @param opts Optional x402 signing settings.
+   * @returns Gateway payment submission result.
+   */
   async signAndSubmit(
     quote: QuoteResponse,
     signer: ethers.Signer,
@@ -170,6 +196,11 @@ export class X402Payment {
     return this.submit(payload);
   }
 
+  /**
+   * @notice Runs default x402 payment flow using signer provider.
+   * @param params Payment execution input.
+   * @returns Gateway payment submission result.
+   */
   async execute(params: {
     quote: QuoteResponse;
     signer: ethers.Signer;

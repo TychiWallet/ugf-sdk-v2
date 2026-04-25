@@ -30,10 +30,19 @@ if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
 
 const client = new UGFClient({ baseUrl: BACKEND_URL });
 
+/**
+ * @notice Saves example output to local file.
+ * @param name Output file name.
+ * @param data JSON data to write.
+ */
 function save(name: string, data: any) {
   fs.writeFileSync(`${OUTPUT_DIR}/${name}`, JSON.stringify(data, null, 2));
 }
 
+/**
+ * @notice Builds quoted Sui transaction kind payload.
+ * @returns Base64 transaction kind bytes.
+ */
 async function buildTxKindB64() {
   const userCoins = await suiClient.getCoins({
     owner: USER,
@@ -62,11 +71,17 @@ async function buildTxKindB64() {
   return Buffer.from(bytes).toString("base64");
 }
 
+/**
+ * @notice Runs sponsored Sui transfer example.
+ */
 async function main() {
+  // Build Sui transaction kind bytes that UGF will quote.
   const txKindB64 = await buildTxKindB64();
 
+  // Log in with EVM payer wallet before requesting quote.
   await client.auth.login(wallet);
 
+  // Ask UGF for route pricing to sponsor this Sui transaction.
   const quote = await client.quote.get({
     payment_coin: "USDC",
     payer_address: wallet.address,
@@ -82,12 +97,14 @@ async function main() {
 
   save("1_quote.json", quote);
 
+  // Pay quote on EVM payment chain using x402.
   await client.payment.x402.execute({
     quote,
     signer: wallet,
     token: "USDC",
   });
 
+  // Load Sui keypair and execute sponsored transaction when sponsor data is ready.
   const { Ed25519Keypair } = await import("@mysten/sui/keypairs/ed25519");
   const keypair = Ed25519Keypair.fromSecretKey(SUI_PK);
 

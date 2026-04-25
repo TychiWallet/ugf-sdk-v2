@@ -7,11 +7,21 @@ export class EvmChain {
   private readonly status: Status;
   private readonly http: HttpClient;
 
+  /**
+   * @notice Creates EVM chain helper.
+   * @param http Shared SDK HTTP client.
+   */
   constructor(http: HttpClient) {
     this.http = http;
     this.status = new Status(http);
   }
 
+  /**
+   * @notice Waits until EVM route completes.
+   * @param digest UGF route digest.
+   * @param opts Optional polling settings.
+   * @returns Final route status.
+   */
   async waitForCompletion(
     digest: string,
     opts?: PollOptions,
@@ -19,6 +29,14 @@ export class EvmChain {
     return this.status.poll(digest, opts);
   }
 
+  /**
+   * @notice Waits for sponsorship, sends user tx, then confirms it to UGF.
+   * @param digest UGF route digest.
+   * @param signer EVM signer for destination tx.
+   * @param buildTx Caller-owned tx builder.
+   * @param opts Optional polling settings.
+   * @returns User transaction hash.
+   */
   async sponsorAndExecute(
     digest: string,
     signer: ethers.Signer,
