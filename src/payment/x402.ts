@@ -216,4 +216,143 @@ export class X402Payment {
 
     return this.signAndSubmit(quote, signer, provider, opts);
   }
+
+  /**
+   * @notice Builds ERC-3009 typed-data payload for external signing. SDK never sees the private key.
+   * @param quote Quote returned by UGF.
+   * @param payerAddress Address that will sign locally.
+   * @param provider Read-only provider for token metadata lookup.
+   * @param opts Optional x402 signing settings.
+   * @returns Typed-data object plus nonce + validity window for caller to sign.
+   */
+  async buildTypedData(
+    quote: QuoteResponse,
+    payerAddress: string,
+    provider: ethers.Provider,
+    opts: X402Options = {},
+  ): Promise<{
+    domain: ethers.TypedDataDomain;
+    types: typeof TRANSFER_WITH_AUTH_TYPES;
+    message: {
+      from: string;
+      to: string;
+      value: bigint;
+      validAfter: bigint;
+      validBefore: bigint;
+      nonce: string;
+    };
+    nonce: string;
+    valid_after: number;
+    valid_before: number;
+  }> {
+    const { validForSeconds = 3600 } = opts;
+
+    const network = await provider.getNetwork();
+    const chainId = String(network.chainId);
+
+    const registry = await this.registry.get();
+    const option = registry.payment_options.find(
+      (o: PaymentOption) =>
+        o.type === "x402" &&
+        o.chains.some((c) => c.chain_id === chainId) &&
+        o.receiver_address?.toLowerCase() === quote.payment_to.toLowerCase(),
+    );
+
+    if (!option) {
+      throw new UGFError(
+        `No x402 token found for chain ${chainId} with receiver ${quote.payment_to}`,
+        "TOKEN_NOT_FOUND",
+      );
+    }
+
+    const chainEntry = option.chains.find(
+      (c: ChainEntry) => c.chain_id === chainId,
+    );
+
+    if (!chainEntry) {
+      throw new UGFError(
+        `Token ${option.token} not supported on chain ${chainId}`,
+        "CHAIN_NOT_SUPPORTED",
+      );
+    }
+
+    const tokenAddress = chainEntry.address;
+    const isNoVersion = NO_VERSION_FUNC.has(tokenAddress.toLowerCase());
+
+    const contract = new ethers.Contract(tokenAddress, ERC3009_ABI, provider);
+
+    const [name, onchainDS, version] = await Promise.all([
+      contract.name() as Promise<string>,
+      contract.DOMAIN_SEPARATOR() as Promise<string>,
+      isNoVersion
+        ? Promise.resolve("1")
+        : (contract.version() as Promise<string>),
+    ]);
+
+    const domain: ethers.TypedDataDomain = {
+      name,
+      version,
+      chainId: Number(chainId),
+      verifyingContract: tokenAddress,
+    };
+
+    const localDS = ethers.TypedDataEncoder.hashDomain(domain);
+    if (localDS.toLowerCase() !== onchainDS.toLowerCase()) {
+      throw new UGFSignatureError(
+        `DOMAIN_SEPARATOR mismatch for ${tokenAddress}. Local: ${localDS}, Onchain: ${onchainDS}`,
+      );
+    }
+
+    const nonce = ethers.hexlify(ethers.randomBytes(32));
+    const validAfter = 0n;
+    const validBefore = BigInt(Math.floor(Date.now() / 1000) + validForSeconds);
+
+    const message = {
+      from: payerAddress,
+      to: quote.payment_to,
+      value: BigInt(quote.payment_amount),
+      validAfter,
+      validBefore,
+      nonce,
+    };
+
+    return {
+      domain,
+      types: TRANSFER_WITH_AUTH_TYPES,
+      message,
+      nonce,
+      valid_after: Number(validAfter),
+      valid_before: Number(validBefore),
+    };
+  }
+
+  /**
+   * @notice Submits an externally-signed x402 payment to UGF.
+   * @param quote Quote returned by UGF.
+   * @param signature Hex signature produced by caller over the buildTypedData payload.
+   * @param nonce Nonce returned by buildTypedData.
+   * @param validAfter validAfter returned by buildTypedData.
+   * @param validBefore validBefore returned by buildTypedData.
+   * @returns Gateway payment submission result.
+   */
+  async submitSigned(
+    quote: QuoteResponse,
+    signature: string,
+    nonce: string,
+    validAfter: number,
+    validBefore: number,
+  ): Promise<PaymentSubmitResponse> {
+    const sig = ethers.Signature.from(signature);
+    const payload: X402Payload = {
+      digest: quote.digest,
+      payment_mode: "x402",
+      v: sig.v,
+      r: sig.r,
+      s: sig.s,
+      nonce,
+      valid_after: validAfter,
+      valid_before: validBefore,
+    };
+    return this.submit(payload);
+  }
 }

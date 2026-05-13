@@ -1,7 +1,7 @@
 {
   "name": "@tychilabs/ugf-sdk",
-  "version": "2.1.0",
-  "description": "Execution layer for remote transactions — let users and AI agents act across blockchains without depending on each chain's gas token",
+  "version": "2.5.0",
+  "description": "Execution layer for onchain transactions — let users and AI agents act across blockchains without depending on each chain's gas token",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",

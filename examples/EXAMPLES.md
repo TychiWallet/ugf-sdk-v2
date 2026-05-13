@@ -94,6 +94,9 @@ UGF sits between those two sides.
 | `examples/sol-custom.ts` | USDC on Base via `x402` | Custom Solana tx | `auth.login`, `quote.get`, `payment.x402.execute`, `chains.sol.sponsorCustomTx` |
 | `examples/sui-transfer.ts` | USDC on Base via `x402` | Sponsored Sui tx | `auth.login`, `quote.get`, `payment.x402.execute`, `chains.sui.execute` |
 | `examples/evm-vault.ts` | ETH on Base via `vault` | EVM transfer on BNB | `auth.login`, `quote.get`, `payment.vault.submit`, `chains.evm.sponsorAndExecute` |
+| `examples/evm-vault-signed.ts` | ETH on Base via `vault`, external-signing helpers | EVM transfer on BNB | `payment.vault.buildPaymentTx`, `payment.vault.submitSigned`, `chains.evm.waitForSponsorship`, `chains.evm.confirmUserTx` |
+| `examples/sol-transfer-signed.ts` | USDC on Base via `x402`, external-signing helpers | Native SOL transfer | `payment.x402.buildTypedData`, `payment.x402.submitSigned`, `chains.sol.waitForUserSigMessage`, `chains.sol.submitUserSig` |
+| `examples/sui-transfer-signed.ts` | USDC on Base via `x402`, external-signing helpers | Sponsored Sui tx | `payment.x402.buildTypedData`, `payment.x402.submitSigned`, `chains.sui.waitForSponsorBytes`, `chains.sui.executeSignedBlock` |
 
 ---
 
@@ -412,6 +415,72 @@ Use this example when:
 
 - you want native vault payment flow
 - your destination action is EVM execution
+
+---
+
+## External-Signing Examples
+
+These three examples cover the same routes as the ones above, but use the additional helper methods that split each flow into a build step and a submit step. The app signs locally with its own wallet. Same gateway endpoints, same payload bytes.
+
+### `examples/evm-vault-signed.ts`
+
+Same route as `evm-vault.ts` (ETH on Base → BNB transfer), using the external-signing helpers.
+
+Flow:
+
+- `payment.vault.buildPaymentTx(quote, payerAddress, "8453", "ETH", baseProvider)` returns unsigned EIP-1559 tx with `to`, `data`, `value`, `chainId`, `gasLimit`, `nonce`, `type: 2`, `maxFeePerGas`, `maxPriorityFeePerGas`
+- app does `wallet.signTransaction(unsigned)` locally → broadcasts via `provider.broadcastTransaction` → waits receipt
+- `payment.vault.submitSigned(quote, receipt.hash)` posts proof to UGF
+- `chains.evm.waitForSponsorship(quote.digest)` polls — no signer
+- app builds + signs + broadcasts destination tx itself
+- `chains.evm.confirmUserTx(quote.digest, destTx.hash)` confirms back to UGF
+
+Output dir: `evm_vault_signed_sdk/`
+
+Use when the app prefers to sign and broadcast EVM txs itself (agent runtimes, remote signers, hardware wallets).
+
+### `examples/sol-transfer-signed.ts`
+
+Same route as `sol-transfer.ts` (USDC on Base → native SOL transfer), using the external-signing helpers.
+
+Flow:
+
+- `payment.x402.buildTypedData(quote, wallet.address, provider)` returns `{ domain, types, message, nonce, valid_after, valid_before }`
+- app calls `wallet.signTypedData(domain, types, message)` locally
+- `payment.x402.submitSigned(quote, signature, nonce, valid_after, valid_before)` posts to UGF
+- `chains.sol.waitForUserSigMessage(quote.digest)` returns `serialized_message`
+- app deserializes the message, signs with its Solana keypair locally, base64-encodes the user sig
+- `chains.sol.submitUserSig(quote.digest, userSig)` posts to UGF
+- `status.poll` (or `chains.evm.waitForSponsorship`) finishes the route
+
+Output dir: `case-1-signed-sdk/`
+
+Use when the app prefers to sign the Solana message itself.
+
+### `examples/sui-transfer-signed.ts`
+
+Same route as `sui-transfer.ts` (USDC on Base → sponsored Sui tx), using the external-signing helpers.
+
+Flow:
+
+- `payment.x402.buildTypedData` + local `signTypedData` + `payment.x402.submitSigned` settle payment
+- `chains.sui.waitForSponsorBytes({ digest })` returns `{ tx_bytes, sponsor_sig }`
+- app signs `tx_bytes` locally with its own `Ed25519Keypair` → produces `userSig`
+- `chains.sui.executeSignedBlock({ rpcUrl, txBytes, userSig, sponsorSig })` broadcasts via Sui RPC (no gateway call)
+
+Output dir: `sui_signed_sdk/`
+
+Use when the app prefers to sign the Sui tx bytes itself.
+
+### Pairings at a glance
+
+| Existing | External-signing pair |
+| -------- | --------------------- |
+| `payment.vault.payAndSubmit` | `payment.vault.buildPaymentTx` + `submitSigned` |
+| `payment.x402.execute` | `payment.x402.buildTypedData` + `submitSigned` |
+| `chains.evm.sponsorAndExecute` | `chains.evm.waitForSponsorship` + `confirmUserTx` |
+| `chains.sol.sponsorSolTransfer` | `chains.sol.waitForUserSigMessage` + `submitUserSig` |
+| `chains.sui.execute` | `chains.sui.waitForSponsorBytes` + `executeSignedBlock` |
 
 ---
 

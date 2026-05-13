@@ -218,4 +218,53 @@ export class SolChain {
       userTxSignature: userTxSig,
     };
   }
+
+  /**
+   * @notice Waits until UGF returns the serialized message that needs the user signature. No signing.
+   * @param digest UGF route digest.
+   * @param opts Optional polling settings.
+   * @returns Status payload containing serialized_message.
+   */
+  async waitForUserSigMessage(
+    digest: string,
+    opts?: PollOptions,
+  ): Promise<StatusResponse> {
+    const sigStatus = await this.status.waitForUserSig(digest, opts);
+    if (!sigStatus.serialized_message) {
+      throw new UGFError(
+        "awaiting_user_sig but serialized_message missing",
+        "MISSING_SERIALIZED_MESSAGE",
+      );
+    }
+    return sigStatus;
+  }
+
+  /**
+   * @notice Submits externally-produced base64 user signature back to UGF.
+   * @param digest UGF route digest.
+   * @param userSig Base64 user signature over the serialized_message.
+   */
+  async submitUserSig(digest: string, userSig: string): Promise<void> {
+    return this.submitSig(digest, userSig);
+  }
+
+  /**
+   * @notice Waits until UGF returns the funding signature for the custom-tx flow. No signing.
+   * @param digest UGF route digest.
+   * @param opts Optional polling settings.
+   * @returns Terminal route status with UGF funding signature.
+   */
+  async waitForSponsorSig(
+    digest: string,
+    opts?: PollOptions,
+  ): Promise<StatusResponse> {
+    const completed = await this.status.poll(digest, opts);
+    if (!completed.signature) {
+      throw new UGFError(
+        "completed but no UGF signature returned",
+        "MISSING_SIGNATURE",
+      );
+    }
+    return completed;
+  }
 }

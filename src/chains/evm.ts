@@ -56,4 +56,29 @@ export class EvmChain {
       userTxHash: userTx.hash,
     };
   }
+
+  /**
+   * @notice Waits until UGF sponsor completes the EVM route. No signing.
+   * @param digest UGF route digest.
+   * @param opts Optional polling settings.
+   * @returns Terminal route status.
+   */
+  async waitForSponsorship(
+    digest: string,
+    opts?: PollOptions,
+  ): Promise<StatusResponse> {
+    return this.status.poll(digest, opts);
+  }
+
+  /**
+   * @notice Confirms a user-broadcast EVM tx hash back to UGF.
+   * @param digest UGF route digest.
+   * @param txHash User-broadcast destination tx hash.
+   */
+  async confirmUserTx(digest: string, txHash: string): Promise<void> {
+    await this.http.post("/evm/confirm", {
+      digest,
+      tx_hash: txHash,
+    });
+  }
 }

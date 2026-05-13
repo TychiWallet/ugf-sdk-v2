@@ -87,4 +87,95 @@ export class VaultPayment {
     const payload = await this.pay(quote, signer, chainId, token);
     return this.submit(payload);
   }
+
+  /**
+   * @notice Builds unsigned vault payment tx. SDK never sees the private key.
+   * @param quote Quote returned by UGF.
+   * @param payerAddress Address that will sign and broadcast the tx locally.
+   * @param chainId Payment chain id.
+   * @param token Payment token symbol.
+   * @param provider Read-only provider used for nonce + gas estimation.
+   * @returns Unsigned tx object ready for local signing.
+   */
+  async buildPaymentTx(
+    quote: QuoteResponse,
+    payerAddress: string,
+    chainId: string,
+    token: string,
+    provider: ethers.Provider,
+  ): Promise<{
+    to: string;
+    data: string;
+    value: bigint;
+    chainId: bigint;
+    gasLimit: bigint;
+    nonce: number;
+    type: number;
+    maxFeePerGas: bigint;
+    maxPriorityFeePerGas: bigint;
+  }> {
+    // Resolve vault address + ABI from registry
+    const entry = await this.registry.getChainEntry(token, chainId);
+    if (!entry.vault_address) {
+      throw new UGFError(
+        `No vault address for token ${token} on chain ${chainId}`,
+        "VAULT_NOT_FOUND",
+      );
+    }
+
+    const vaultAbi = await this.registry.getVaultAbi();
+    const vault = new ethers.Contract(entry.vault_address, vaultAbi, provider);
+
+    const data = vault.interface.encodeFunctionData("payForFuel", [
+      quote.digest,
+    ]);
+    const value = BigInt(quote.payment_amount);
+    const to = entry.vault_address;
+
+    const nonce = await provider.getTransactionCount(payerAddress, "pending");
+    const gasLimit = await provider.estimateGas({
+      to,
+      from: payerAddress,
+      data,
+      value,
+    });
+    const network = await provider.getNetwork();
+    const fee = await provider.getFeeData();
+    if (!fee.maxFeePerGas || !fee.maxPriorityFeePerGas) {
+      throw new UGFError(
+        "Provider did not return EIP-1559 fee data",
+        "FEE_DATA_MISSING",
+      );
+    }
+
+    return {
+      to,
+      data,
+      value,
+      chainId: network.chainId,
+      gasLimit,
+      nonce,
+      type: 2,
+      maxFeePerGas: fee.maxFeePerGas,
+      maxPriorityFeePerGas: fee.maxPriorityFeePerGas,
+    };
+  }
+
+  /**
+   * @notice Submits a vault payment the app already broadcast on-chain.
+   * @param quote Quote returned by UGF.
+   * @param txHash Hash of the user-broadcast payForFuel tx.
+   * @returns Gateway payment submission result.
+   */
+  async submitSigned(
+    quote: QuoteResponse,
+    txHash: string,
+  ): Promise<PaymentSubmitResponse> {
+    const payload: VaultPayload = {
+      digest: quote.digest,
+      payment_mode: "vault",
+      tx_hash: txHash,
+    };
+    return this.submit(payload);
+  }
 }

@@ -339,6 +339,8 @@ Use `x402` when payment happens through off-chain signature authorization rather
 | `submit(payload)` | Sends signed x402 payload to gateway. | Use when payload already exists. |
 | `signAndSubmit(quote, signer, provider, opts)` | Signs x402 payload and submits it in one step. | Use when you want full x402 flow but still control provider explicitly. |
 | `execute({ quote, signer, opts })` | Simplest x402 path. Reads provider from signer, signs, then submits. | Use in most app integrations. |
+| `buildTypedData(quote, payerAddress, provider, opts)` | Returns ERC-3009 typed-data payload (`domain`, `types`, `message`, `nonce`, validity window) for external signing. | Use when you want to sign in your own wallet, agent, hardware device, or remote signer. |
+| `submitSigned(quote, signature, nonce, validAfter, validBefore)` | Splits an externally-produced hex signature into `v/r/s` and submits the x402 payload. | Pair with `buildTypedData` to finish the external-signing flow. |
 
 `X402Options` currently supports:
 
@@ -353,6 +355,8 @@ Use `vault` when payment is done by sending native value to supported vault cont
 | `pay(quote, signer, chainId, token)` | Finds vault from registry, calls `payForFuel`, waits for receipt, then returns vault payment payload. | Use when you want on-chain payment first and submission second. |
 | `submit(payload)` | Sends vault payment payload to gateway. | Use when vault transaction already happened. |
 | `payAndSubmit(quote, signer, chainId, token)` | Runs full vault payment flow in one call. | Use in most native vault integrations. |
+| `buildPaymentTx(quote, payerAddress, chainId, token, provider)` | Returns unsigned EIP-1559 vault tx (`to`, `data`, `value`, `chainId`, `gasLimit`, `nonce`, `type: 2`, `maxFeePerGas`, `maxPriorityFeePerGas`) for external signing. | Use when the app/agent prefers to sign and broadcast locally. |
+| `submitSigned(quote, txHash)` | Submits proof of a vault tx the app already broadcast on-chain. | Pair with `buildPaymentTx` to finish the external-signing vault flow. |
 
 ### `client.chains.evm`
 
@@ -362,6 +366,8 @@ Use EVM chain helper when destination action is EVM execution.
 | -------- | ------------ | -------------- |
 | `waitForCompletion(digest, opts)` | Waits until UGF route is complete. | Use when you only need final status. |
 | `sponsorAndExecute(digest, signer, buildTx, opts)` | Waits for sponsorship, lets your app build and send destination EVM tx, then confirms tx hash back to UGF. | Use for normal EVM destination execution flow. |
+| `waitForSponsorship(digest, opts)` | Polls until sponsor side completes. No signer required. | Use when the app prefers to broadcast its own destination tx. |
+| `confirmUserTx(digest, txHash)` | Posts a user-broadcast destination tx hash to UGF. | Pair with `waitForSponsorship` when the app broadcasts the destination tx itself. |
 
 ### `client.chains.sol`
 
@@ -372,6 +378,9 @@ Use Solana chain helper when destination action lands on Solana.
 | `sponsorSolTransfer(digest, keypair, opts)` | Waits for UGF-prepared SOL transfer, signs required user part, submits signature, then waits for completion. | Use for native SOL transfer route. |
 | `sponsorSplTransfer(digest, keypair, opts)` | Same pattern for SPL token transfer. | Use for SPL token route. |
 | `sponsorCustomTx(digest, keypair, connection, buildTx, opts)` | Waits for UGF funding step to finish, then your app builds and broadcasts its own custom Solana transaction. | Use for custom Solana action after sponsor funding. |
+| `waitForUserSigMessage(digest, opts)` | Polls until UGF returns the `serialized_message` that needs the user signature. No signing. | Use when the app prefers to sign the Solana message itself. |
+| `submitUserSig(digest, userSig)` | Submits base64 user signature back to UGF. | Pair with `waitForUserSigMessage` after the app signs locally. |
+| `waitForSponsorSig(digest, opts)` | Polls until UGF returns the funding signature for the custom-tx flow. No signing. | Use before building and broadcasting your own custom Solana tx. |
 
 ### `client.chains.sui`
 
@@ -380,6 +389,8 @@ Use Sui chain helper when destination action lands on Sui.
 | Function | What it does | When to use it |
 | -------- | ------------ | -------------- |
 | `execute({ digest, keypair, rpcUrl, onTick })` | Polls until sponsor tx bytes and sponsor signature are ready, signs with user keypair, then executes sponsored Sui transaction block. | Use for standard Sui execution flow. |
+| `waitForSponsorBytes({ digest, onTick })` | Polls until UGF returns `tx_bytes` and `sponsor_sig`. No signing. | Use when the app prefers to sign the Sui tx bytes itself. |
+| `executeSignedBlock({ rpcUrl, txBytes, userSig, sponsorSig })` | Broadcasts an externally-signed Sui transaction block via Sui RPC (no gateway call). | Pair with `waitForSponsorBytes` after the app signs `tx_bytes` locally. |
 
 ### `client.chains.tron`
 
@@ -526,8 +537,35 @@ See [`examples/`](./examples) for runnable scripts:
 - [`sol-spl.ts`](./examples/sol-spl.ts) — Solana SPL token transfer
 - [`sol-custom.ts`](./examples/sol-custom.ts) — Solana custom transaction
 - [`sui-transfer.ts`](./examples/sui-transfer.ts) — Sui transaction
+- [`evm-vault-signed.ts`](./examples/evm-vault-signed.ts) — EVM vault using external-signing helpers
+- [`sol-transfer-signed.ts`](./examples/sol-transfer-signed.ts) — Solana SOL transfer using external-signing helpers
+- [`sui-transfer-signed.ts`](./examples/sui-transfer-signed.ts) — Sui transaction using external-signing helpers
 
 Tron support is available in SDK. Runnable Tron examples are not in `examples/` yet.
+
+---
+
+## External-Signing Helpers
+
+Every flow has an additional pair of helpers for apps that prefer to sign locally and hand the SDK only the resulting signature or tx hash. Same gateway endpoints, same payload bytes — these helpers just split the existing flow into a build step and a submit step.
+
+```text
+1. SDK builds  → unsigned tx / typed-data / serialized message
+2. App signs   → with its own wallet / agent / device
+3. SDK submits → proof (txHash, signature, or user sig) back to UGF
+```
+
+Pairings:
+
+| Existing | External-signing pair |
+| -------- | --------------------- |
+| `payment.vault.pay` / `payAndSubmit` | `payment.vault.buildPaymentTx` + `payment.vault.submitSigned` |
+| `payment.x402.sign` / `signAndSubmit` / `execute` | `payment.x402.buildTypedData` + `payment.x402.submitSigned` |
+| `chains.evm.sponsorAndExecute` | `chains.evm.waitForSponsorship` + `chains.evm.confirmUserTx` |
+| `chains.sol.sponsorSolTransfer` / `sponsorSplTransfer` | `chains.sol.waitForUserSigMessage` + `chains.sol.submitUserSig` |
+| `chains.sol.sponsorCustomTx` | `chains.sol.waitForSponsorSig` (+ broadcast your own tx) |
+| `chains.sui.execute` | `chains.sui.waitForSponsorBytes` + `chains.sui.executeSignedBlock` |
+| `chains.tron.sponsorAndBroadcastTrx/Trc20` | already split — sign and broadcast lives in your app |
 
 ---
 

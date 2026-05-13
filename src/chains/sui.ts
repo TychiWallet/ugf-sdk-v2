@@ -77,4 +77,68 @@ export class SuiChain {
 
     return result;
   }
+
+  /**
+   * @notice Polls UGF until sponsor returns tx_bytes + sponsor_sig. No signing.
+   * @param params Wait inputs.
+   * @returns Sponsor-provided tx_bytes and sponsor_sig.
+   */
+  async waitForSponsorBytes(params: {
+    digest: string;
+    onTick?: (status: any, i: number) => void;
+  }): Promise<{ tx_bytes: string; sponsor_sig: string }> {
+    const { digest, onTick } = params;
+
+    let txBytes: string | null = null;
+    let sponsorSig: string | null = null;
+
+    for (let i = 0; i < 30; i++) {
+      await new Promise((r) => setTimeout(r, 3000));
+
+      const status = (await this.http.get(`/status?digest=${digest}`)) as any;
+
+      onTick?.(status, i);
+
+      if (status.tx_bytes && status.sponsor_sig) {
+        txBytes = status.tx_bytes;
+        sponsorSig = status.sponsor_sig;
+        break;
+      }
+    }
+
+    if (!txBytes || !sponsorSig) {
+      throw new Error("Sponsor timeout");
+    }
+
+    return { tx_bytes: txBytes, sponsor_sig: sponsorSig };
+  }
+
+  /**
+   * @notice Broadcasts an externally-signed Sui transaction block with both user and sponsor sigs.
+   * @param params Execution inputs.
+   * @returns Sui RPC execution result.
+   */
+  async executeSignedBlock(params: {
+    rpcUrl: string;
+    txBytes: string;
+    userSig: string;
+    sponsorSig: string;
+  }) {
+    const { SuiJsonRpcClient } = await loadSui();
+    const client = new SuiJsonRpcClient({
+      url: params.rpcUrl,
+      network: "mainnet",
+    });
+
+    const bytes = Buffer.from(params.txBytes, "base64");
+
+    return client.executeTransactionBlock({
+      transactionBlock: bytes,
+      signature: [params.userSig, params.sponsorSig],
+      options: {
+        showEffects: true,
+        showEvents: true,
+      },
+    });
+  }
 }
